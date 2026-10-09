@@ -17,20 +17,30 @@ class SaleController extends Controller
      * logbook that only kept a daily total), and a receipt is generated
      * for every transaction.
      */
-    public function index()
-    {
-        $sales = Sale::withCount('items')->latest()->paginate(15);
-
-        return view('sales.index', compact('sales'));
-    }
-
     public function create()
     {
         // Only show products that are actually in stock, so staff can't
-        // accidentally sell something that isn't there.
+        // accidentally sell something that isn't there. With large
+        // catalogs, the view lets staff search by name/SKU and narrow by
+        // category instead of scrolling a long list.
         $products = Product::where('quantity_on_hand', '>', 0)->orderBy('name')->get();
+        $categories = Product::CATEGORIES;
 
-        return view('sales.create', compact('products'));
+        // Built here (not inline in the Blade view) because Blade's @json
+        // directive splits its argument on every top-level comma — which
+        // breaks on a multi-field array literal like this one. Passing a
+        // single already-built variable to @json() sidesteps that entirely.
+        $productsForJs = $products->map(fn ($p) => [
+            'id' => $p->id,
+            'label' => $p->name . ' — ' . $p->sku,
+            'name' => $p->name,
+            'sku' => $p->sku,
+            'category' => $p->category,
+            'price' => (float) $p->selling_price,
+            'stock' => $p->quantity_on_hand,
+        ])->values();
+
+        return view('sales.create', compact('products', 'categories', 'productsForJs'));
     }
 
     public function store(Request $request)
@@ -104,8 +114,9 @@ class SaleController extends Controller
             }
 
             $sale = Sale::create([
-                'sale_number' => 'SO-' . now()->format('Ymd') . '-' . str_pad((Sale::whereDate('created_at', today())->count() + 1), 4, '0', STR_PAD_LEFT),
+                'sale_number' => 'PENDING-' . uniqid(),
                 'cashier_name' => $validated['cashier_name'] ?? (auth()->user()->name ?? 'Staff'),
+                'user_id' => auth()->id(),
                 'payment_method' => $validated['payment_method'],
                 'gcash_reference' => $validated['gcash_reference'] ?? null,
                 'total_amount' => $total,
@@ -126,6 +137,12 @@ class SaleController extends Controller
                 $line['product']->decrement('quantity_on_hand', $line['quantity']);
             }
 
+            // Receipt number is derived from the row's own DB auto-increment
+            // id — guaranteed unique and strictly increasing, unlike a
+            // date+daily-count scheme which can collide under concurrent
+            // sales and resets meaninglessly every day.
+            $sale->update(['sale_number' => 'SO-' . str_pad($sale->id, 6, '0', STR_PAD_LEFT)]);
+
             return $sale;
         });
 
@@ -139,3 +156,4 @@ class SaleController extends Controller
         return view('sales.show', compact('sale'));
     }
 }
+    

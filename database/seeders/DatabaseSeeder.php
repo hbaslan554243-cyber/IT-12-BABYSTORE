@@ -45,11 +45,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $products = [
-            ['sku' => 'DIAP-M-01', 'name' => 'Baby Diapers (Medium)', 'category' => 'Diapers', 'unit' => 'pack', 'selling_price' => 350, 'cost_price' => 280, 'quantity_on_hand' => 20, 'reorder_point' => 5],
-            ['sku' => 'DIAP-L-01', 'name' => 'Baby Diapers (Large)', 'category' => 'Diapers', 'unit' => 'pack', 'selling_price' => 380, 'cost_price' => 300, 'quantity_on_hand' => 15, 'reorder_point' => 5],
-            ['sku' => 'MILK-01', 'name' => 'Powdered Milk 900g', 'category' => 'Milk', 'unit' => 'can', 'selling_price' => 520, 'cost_price' => 430, 'quantity_on_hand' => 10, 'reorder_point' => 4],
-            ['sku' => 'LOTION-01', 'name' => 'Baby Lotion 200ml', 'category' => 'Lotion', 'unit' => 'bottle', 'selling_price' => 180, 'cost_price' => 130, 'quantity_on_hand' => 25, 'reorder_point' => 6],
-            ['sku' => 'WIPES-01', 'name' => 'Baby Wet Wipes (80ct)', 'category' => 'Hygiene', 'unit' => 'pack', 'selling_price' => 120, 'cost_price' => 85, 'quantity_on_hand' => 3, 'reorder_point' => 8],
+            ['sku' => 'DIAP-M-01', 'name' => 'Baby Diapers (Medium)', 'brand' => 'Pampers', 'category' => 'Diapers', 'unit' => 'pack', 'selling_price' => 350, 'cost_price' => 280, 'quantity_on_hand' => 20, 'reorder_point' => 5],
+            ['sku' => 'DIAP-L-01', 'name' => 'Baby Diapers (Large)', 'brand' => 'Huggies', 'category' => 'Diapers', 'unit' => 'pack', 'selling_price' => 380, 'cost_price' => 300, 'quantity_on_hand' => 15, 'reorder_point' => 5],
+            ['sku' => 'MILK-01', 'name' => 'Powdered Milk 900g', 'brand' => 'Nestle', 'category' => 'Milk', 'unit' => 'can', 'selling_price' => 520, 'cost_price' => 430, 'quantity_on_hand' => 10, 'reorder_point' => 4, 'expiration_date' => now()->addMonths(8)->format('Y-m-d')],
+            ['sku' => 'LOTION-01', 'name' => 'Baby Lotion 200ml', 'brand' => 'Johnson\'s', 'category' => 'Lotion', 'unit' => 'bottle', 'selling_price' => 180, 'cost_price' => 130, 'quantity_on_hand' => 25, 'reorder_point' => 6, 'expiration_date' => now()->addMonths(18)->format('Y-m-d')],
+            ['sku' => 'WIPES-01', 'name' => 'Baby Wet Wipes (80ct)', 'brand' => 'Pampers', 'category' => 'Wipes', 'unit' => 'pack', 'selling_price' => 120, 'cost_price' => 85, 'quantity_on_hand' => 0, 'reorder_point' => 8],
         ];
 
         foreach ($products as $product) {

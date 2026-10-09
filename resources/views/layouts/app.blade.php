@@ -186,6 +186,8 @@
         .badge.bg-secondary { background: #EAEFF3 !important; color: var(--clr-text-muted) !important; }
 
         .low-stock { background-color: #FFF7E0 !important; }
+        .out-of-stock-row { background-color: #FBE9E9 !important; }
+        .badge.bg-danger-soft { background: var(--clr-danger-soft) !important; color: var(--clr-danger-text) !important; }
 
         .form-control, .form-select {
             width: 100%;
@@ -248,13 +250,9 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.5 3h2l2.7 12.4a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L21.5 8H6"/></svg>
             New Sale (POS)
         </a></li>
-        <li><a href="{{ route('sales.index') }}" class="{{ request()->routeIs('sales.index') || request()->routeIs('sales.show') ? 'active' : '' }}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v18l-3-2-3 2-3-2-3 2-3-2-1 1Z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
-            Sales History
-        </a></li>
-        <li><a href="{{ route('sales.log') }}" class="{{ request()->routeIs('sales.log') ? 'active' : '' }}">
+        <li><a href="{{ route('sales.log') }}" class="{{ request()->routeIs('sales.log') || request()->routeIs('sales.show') ? 'active' : '' }}">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="3.5" cy="6" r=".5" fill="currentColor"/><circle cx="3.5" cy="12" r=".5" fill="currentColor"/><circle cx="3.5" cy="18" r=".5" fill="currentColor"/></svg>
-            Itemized Sales Log
+            Sales Records
         </a></li>
         <li><a href="{{ route('purchase-orders.index') }}" class="{{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8Z"/><circle cx="5.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></svg>

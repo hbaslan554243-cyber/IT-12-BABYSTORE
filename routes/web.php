@@ -26,6 +26,10 @@ use Illuminate\Support\Facades\Route;
 | Access is role-based:
 |   'role:owner'         -> Owner only (dashboard-wide + user management)
 |   'role:owner,staff'   -> Both roles, per the Owner/Staff permission table
+|
+| NOTE: Laravel matches routes in registration order. Static routes such as
+| 'create' must be registered BEFORE wildcard routes like '{purchaseOrder}',
+| otherwise the wildcard swallows them and you get a 404.
 */
 
 // --- Authentication (unauthenticated only) ---
@@ -59,28 +63,37 @@ Route::middleware('auth')->group(function () {
 
     // Problem 2: Sales / POS (both roles can process sales)
     Route::middleware('role:owner,staff')->group(function () {
-        Route::get('sales', [SaleController::class, 'index'])->name('sales.index');
         Route::get('sales/create', [SaleController::class, 'create'])->name('sales.create');
         Route::post('sales', [SaleController::class, 'store'])->name('sales.store');
-        Route::get('sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+        Route::get('sales/{sale}', [SaleController::class, 'show'])->name('sales.show')->whereNumber('sale');
     });
 
     // Problem 3: Itemized Sales / Receipt Log (Owner: full reports; Staff: relevant history)
     Route::get('sales-log', [SalesLogController::class, 'index'])->name('sales.log')->middleware('role:owner,staff');
+    Route::get('sales-log/export-pdf', [SalesLogController::class, 'exportPdf'])->name('sales.log.pdf')->middleware('role:owner,staff');
 
-    // Supporting module: Restocking / Purchase Orders (both can record restocking)
-    Route::middleware('role:owner,staff')->group(function () {
-        Route::get('suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
-        Route::get('purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
-        Route::get('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
-        Route::post('purchase-orders/{purchaseOrder}/deliver', [PurchaseOrderController::class, 'markDelivered'])->name('purchase-orders.deliver');
-    });
-    // Only the Owner creates suppliers and places new purchase orders.
+    // Supporting module: Restocking / Purchase Orders
+    // Owner-only routes are registered FIRST so 'create' isn't captured by '{purchaseOrder}'.
     Route::middleware('role:owner')->group(function () {
         Route::get('suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
         Route::post('suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+        Route::get('suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+        Route::put('suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+        Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
         Route::get('purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
         Route::post('purchase-orders', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+    });
+
+    // Both roles can view suppliers and purchase orders, and record deliveries.
+    Route::middleware('role:owner,staff')->group(function () {
+        Route::get('suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+        Route::get('purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+        Route::get('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])
+            ->name('purchase-orders.show')
+            ->whereNumber('purchaseOrder');
+        Route::post('purchase-orders/{purchaseOrder}/deliver', [PurchaseOrderController::class, 'markDelivered'])
+            ->name('purchase-orders.deliver')
+            ->whereNumber('purchaseOrder');
     });
 
     // Revenue & Summary Reports — Owner only

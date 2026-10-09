@@ -56,8 +56,9 @@ class PurchaseOrderController extends Controller
             }
 
             $po = PurchaseOrder::create([
-                'po_number' => 'PO-' . now()->format('Ymd') . '-' . str_pad((PurchaseOrder::whereDate('created_at', today())->count() + 1), 4, '0', STR_PAD_LEFT),
+                'po_number' => 'PENDING-' . uniqid(),
                 'supplier_id' => $validated['supplier_id'],
+                'user_id' => auth()->id(),
                 'status' => 'pending',
                 'order_date' => $validated['order_date'],
                 'expected_delivery_date' => $validated['expected_delivery_date'] ?? null,
@@ -73,6 +74,8 @@ class PurchaseOrderController extends Controller
                     'subtotal' => $item['quantity_ordered'] * $item['unit_cost'],
                 ]);
             }
+
+            $po->update(['po_number' => 'PO-' . str_pad($po->id, 6, '0', STR_PAD_LEFT)]);
 
             return $po;
         });

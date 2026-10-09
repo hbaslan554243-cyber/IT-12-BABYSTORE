@@ -197,17 +197,11 @@
         </svg>
 
         <h2>Welcome Back!</h2>
-        <p>Sign in to Aizen Baby Store.</p>
+        <p>Aizen Baby Store Management system.</p>
     </div>
 
     <div class="form-side">
-        <div class="logo-row">
-            <div class="logo-bubble">🍼</div>
-            <div>
-                <strong>Aizen Baby Store</strong>
-                <span>Management System</span>
-            </div>
-        </div>
+    
 
         <h1>Sign In</h1>
         <div class="sub">Enter your credentials to access your dashboard.</div>

@@ -4,14 +4,15 @@
     "description": "Aizen Baby Store Integrated Sales, Inventory, and Purchase Order (Restocking) Management System",
     "require": {
         "php": "^8.1",
-        "laravel/framework": "^10.0",
-        "guzzlehttp/guzzle": "^7.2"
+        "laravel/framework": "^12.0",
+        "guzzlehttp/guzzle": "^7.2",
+        "barryvdh/laravel-dompdf": "^3.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
         "laravel/sail": "^1.18",
         "laravel/tinker": "^2.8",
-        "phpunit/phpunit": "^10.1"
+        "phpunit/phpunit": "^11.0"
     },
     "autoload": {
         "psr-4": {
