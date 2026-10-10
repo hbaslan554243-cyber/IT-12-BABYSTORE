@@ -64,6 +64,7 @@ class SalesLogController extends Controller
         $sales = $query->latest()->get();
 
         $grandTotal = $sales->sum('total_amount');
+        $totalItemsSold = $sales->sum(fn ($sale) => $sale->items->sum('quantity'));
 
         $filters = [
             'date_from' => $request->date_from,
@@ -71,8 +72,8 @@ class SalesLogController extends Controller
             'receipt' => $request->receipt,
         ];
 
-        $pdf = Pdf::loadView('sales.pdf', compact('sales', 'grandTotal', 'filters'));
-        $pdf->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('sales.pdf', compact('sales', 'grandTotal', 'totalItemsSold', 'filters'));
+        $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('sales-report-' . now()->format('Y-m-d_His') . '.pdf');
     }

@@ -1,10 +1,10 @@
 @extends('layouts.app')
-@section('title', 'Sales Records')
+@section('title', '')
 
 @section('content')
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
-            <h2>Sales Records <small class="text-muted fs-6">(Problems 2 &amp; 3 combined)</small></h2>
+            <h2>Sales Records <small class="text-muted fs-6"></small></h2>
             <p class="text-muted">Every sale, with its exact items one click away — click any row to expand it, or "View Receipt" for a quick preview.</p>
         </div>
         <a href="{{ route('sales.log.pdf', request()->query()) }}" target="_blank" class="btn btn-outline-secondary">📄 Export PDF</a>

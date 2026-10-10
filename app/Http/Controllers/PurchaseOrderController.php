@@ -112,6 +112,17 @@ class PurchaseOrderController extends Controller
                 if ($deliveredQty > 0) {
                     $item->update(['quantity_delivered' => $deliveredQty]);
                     $item->product->increment('quantity_on_hand', $deliveredQty);
+                    DB::table('inventory_movements')->insert([
+                        'product_id' => $item->product_id,
+                        'type' => 'receipt',
+                        'quantity_delta' => $deliveredQty,
+                        'reference_type' => 'purchase_order',
+                        'reference_id' => $purchaseOrder->id,
+                        'occurred_at' => now(),
+                        'note' => 'Purchase order delivery received',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
                 }
             }
 

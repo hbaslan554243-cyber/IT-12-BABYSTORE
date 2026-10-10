@@ -1,8 +1,8 @@
 @extends('layouts.app')
-@section('title', 'New Sale')
+@section('title', '')
 
 @section('content')
-    <h2>New Sale (Point of Sale) <small class="text-muted fs-6">(Problem 2 fix)</small></h2>
+    <h2>New Sale (Point of Sale) <small class="text-muted fs-6"></small></h2>
 
     <form method="POST" action="{{ route('sales.store') }}" id="pos-form">
         @csrf
@@ -12,7 +12,7 @@
         <div class="pos-wrap">
             <div class="pos-main">
                 <div class="card p-3">
-                    <input type="text" id="pos-search" class="form-control mb-3" placeholder="🔍 Search product name or SKU...">
+                    <input type="text" id="pos-search" class="form-control mb-3" placeholder="🔍 Search product">
 
                     <div class="category-tabs" id="category-tabs">
                         <button type="button" class="category-tab active" data-category="">All</button>
@@ -105,7 +105,13 @@
         background: #fff; display: flex; align-items: center; justify-content: center;
         font-weight: 800; font-size: 14px; color: var(--clr-primary-darker); cursor: pointer; flex-shrink: 0;
     }
-    .cart-qty-val { min-width: 20px; text-align: center; font-weight: 700; font-size: 13px; }
+    .cart-qty-input {
+        width: 54px; height: 30px; padding: 2px 4px; border: 1px solid var(--clr-border);
+        border-radius: 8px; text-align: center; font-weight: 700; color: var(--clr-text);
+    }
+    .cart-qty-input::-webkit-inner-spin-button,
+    .cart-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .cart-qty-input { appearance: textfield; -moz-appearance: textfield; }
     .cart-remove { color: var(--clr-danger-text); cursor: pointer; font-size: 15px; flex-shrink: 0; }
     .cart-empty { text-align: center; color: var(--clr-text-muted); padding: 24px 8px; font-size: 13.5px; }
     .pay-method-btn.active {
@@ -210,12 +216,30 @@
                             <div class="cart-sub">₱${line.product.price.toFixed(2)} each · ₱${subtotal.toFixed(2)}</div>
                         </div>
                         <div class="cart-qty-btn" data-action="dec">−</div>
-                        <div class="cart-qty-val">${line.qty}</div>
+                        <input type="number" class="cart-qty-input" min="1" max="${line.product.stock}" step="1" value="${line.qty}" aria-label="Quantity for ${line.product.name}">
                         <div class="cart-qty-btn" data-action="inc">+</div>
                         <div class="cart-remove" data-action="remove">🗑</div>
                     `;
                     row.querySelector('[data-action="dec"]').addEventListener('click', () => changeQty(line.product.id, -1));
                     row.querySelector('[data-action="inc"]').addEventListener('click', () => changeQty(line.product.id, 1));
+                    const qtyInput = row.querySelector('.cart-qty-input');
+                    qtyInput.addEventListener('input', function () {
+                        const quantity = this.valueAsNumber;
+                        if (Number.isInteger(quantity) && quantity >= 1 && quantity <= line.product.stock) {
+                            line.qty = quantity;
+                            row.querySelector('.cart-sub').textContent = `₱${line.product.price.toFixed(2)} each · ₱${(line.product.price * line.qty).toFixed(2)}`;
+                            recalcTotal();
+                        }
+                    });
+                    qtyInput.addEventListener('change', function () {
+                        const quantity = this.valueAsNumber;
+                        if (!Number.isInteger(quantity) || quantity < 1) {
+                            this.value = line.qty;
+                            return;
+                        }
+                        line.qty = Math.min(quantity, line.product.stock);
+                        renderCart();
+                    });
                     row.querySelector('[data-action="remove"]').addEventListener('click', () => removeLine(line.product.id));
                     cartList.appendChild(row);
                 });

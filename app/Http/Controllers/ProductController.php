@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
@@ -60,6 +61,18 @@ class ProductController extends Controller
         $data['sku'] = Product::generateSku($data['category']);
         $product = Product::create($data);
 
+        if ($product->quantity_on_hand > 0) {
+            DB::table('inventory_movements')->insert([
+                'product_id' => $product->id,
+                'type' => 'adjustment',
+                'quantity_delta' => $product->quantity_on_hand,
+                'occurred_at' => now(),
+                'note' => 'Initial stock entered',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
         return redirect()->route('products.index')->with('status', 'Product added successfully. SKU: ' . $product->sku);
     }
 
@@ -87,7 +100,22 @@ class ProductController extends Controller
             'expiration_date' => 'nullable|date',
         ]);
 
-        $product->update($data);
+        $stockDelta = (int) $data['quantity_on_hand'] - (int) $product->quantity_on_hand;
+        DB::transaction(function () use ($product, $data, $stockDelta) {
+            $product->update($data);
+
+            if ($stockDelta !== 0) {
+                DB::table('inventory_movements')->insert([
+                    'product_id' => $product->id,
+                    'type' => 'adjustment',
+                    'quantity_delta' => $stockDelta,
+                    'occurred_at' => now(),
+                    'note' => 'Manual stock adjustment',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
 
         return redirect()->route('products.index')->with('status', 'Product updated successfully.');
     }

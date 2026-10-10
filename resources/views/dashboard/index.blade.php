@@ -1,32 +1,26 @@
 @extends('layouts.app')
-@section('title', 'Dashboard')
+@section('title', '')
 
 @section('content')
     <h2 class="mb-4">Dashboard</h2>
 
-    {{-- Revenue KPI — filterable right here, clickable through to full Reports --}}
+    {{-- All-time revenue summary --}}
     <div class="card p-3 mb-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
             <h5 class="mb-0">💰 Revenue</h5>
-            <div class="d-flex gap-2">
-                @foreach(['week' => 'Week', 'month' => 'Month', 'year' => 'Year'] as $key => $label)
-                    <a href="{{ route('dashboard', ['period' => $key]) }}"
-                       class="btn btn-sm {{ $period === $key ? 'btn-brand' : 'btn-outline-secondary' }}">{{ $label }}</a>
-                @endforeach
-            </div>
         </div>
 
         @if(auth()->user()->isOwner())
-            <a href="{{ route('reports.index', ['period' => $period]) }}" class="text-decoration-none">
+            <a href="{{ route('reports.index') }}" class="text-decoration-none">
         @endif
             <div class="row g-3 align-items-center">
                 <div class="col-md-5">
-                    <div class="text-muted small">{{ $periodLabel }}</div>
-                    <div class="fs-2 fw-bold" style="color: var(--clr-text);">₱{{ number_format($periodRevenue, 2) }}</div>
+                    <div class="text-muted small">Total Revenue</div>
+                    <div class="fs-2 fw-bold" style="color: var(--clr-text);">₱{{ number_format($totalRevenue, 2) }}</div>
                 </div>
                 <div class="col-md-4">
-                    <div class="text-muted small">Transactions</div>
-                    <div class="fs-4 fw-bold">{{ $periodTransactions }}</div>
+                    <div class="text-muted small">Total Transactions</div>
+                    <div class="fs-4 fw-bold">{{ $totalTransactions }}</div>
                 </div>
                 <div class="col-md-3 text-md-end">
                     @if(auth()->user()->isOwner())
@@ -99,7 +93,7 @@
     <div class="row g-3">
         <div class="col-md-6">
             <div class="card p-3 h-100">
-                <h5>⚠️ Low Stock Alert <small class="text-muted">(Problem 1 fix)</small></h5>
+                <h5>⚠️ Low Stock <small class="text-muted"></small></h5>
                 @if($lowStockProducts->isEmpty())
                     <p class="text-muted mb-0">No products are currently low on stock.</p>
                 @else
@@ -148,7 +142,7 @@
     <div class="row g-3 mt-1">
         <div class="col-md-6">
             <div class="card p-3 h-100">
-                <h5>📦 Pending Deliveries <small class="text-muted">(supporting restocking module)</small></h5>
+                <h5>📦 Pending Supplies <small class="text-muted">(supporting restocking module)</small></h5>
                 @if($pendingPurchaseOrders->isEmpty())
                     <p class="text-muted mb-0">No pending purchase orders.</p>
                 @else

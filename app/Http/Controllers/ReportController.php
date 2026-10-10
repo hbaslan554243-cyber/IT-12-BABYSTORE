@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sale;
+use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,17 @@ class ReportController extends Controller
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->whereBetween('sales.created_at', [$start, $end])
             ->sum('sale_items.quantity');
+        $costOfGoodsSold = (float) DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('products', 'products.id', '=', 'sale_items.product_id')
+            ->whereBetween('sales.created_at', [$start, $end])
+            ->sum(DB::raw('sale_items.quantity * COALESCE(sale_items.unit_cost_at_sale, products.cost_price)'));
+        $grossProfit = $totalRevenue - $costOfGoodsSold;
+        $estimatedCostLineCount = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereBetween('sales.created_at', [$start, $end])
+            ->whereNull('sale_items.unit_cost_at_sale')
+            ->count();
         $avgSale = $totalTransactions > 0 ? $totalRevenue / $totalTransactions : 0;
 
         // --- Comparison against the previous equivalent period ---
@@ -54,11 +66,58 @@ class ReportController extends Controller
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->whereBetween('sales.created_at', [$start, $end])
-            ->select('products.name', DB::raw('SUM(sale_items.quantity) as qty'), DB::raw('SUM(sale_items.subtotal) as revenue'))
-            ->groupBy('products.name')
+            ->select('products.id', 'products.name', DB::raw('SUM(sale_items.quantity) as qty'), DB::raw('SUM(sale_items.subtotal) as revenue'), DB::raw('SUM(sale_items.quantity * COALESCE(sale_items.unit_cost_at_sale, products.cost_price)) as cost_of_goods'))
+            ->groupBy('products.id', 'products.name')
             ->orderByDesc('qty')
             ->limit(5)
             ->get();
+
+        $salesByCategory = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('products', 'products.id', '=', 'sale_items.product_id')
+            ->whereBetween('sales.created_at', [$start, $end])
+            ->select(DB::raw("COALESCE(products.category, 'Uncategorized') as category"), DB::raw('SUM(sale_items.subtotal) as revenue'))
+            ->groupBy('products.category')
+            ->orderByDesc('revenue')
+            ->get();
+
+        // --- Current inventory snapshot (independent of the sales period) ---
+        $inventoryProducts = Product::orderBy('name')->get();
+        $inventoryProductCount = $inventoryProducts->count();
+        $inventoryUnits = (int) $inventoryProducts->sum('quantity_on_hand');
+        $inventoryCostValue = (float) $inventoryProducts->sum(fn ($product) => $product->cost_price * $product->quantity_on_hand);
+        $inventoryRetailValue = (float) $inventoryProducts->sum(fn ($product) => $product->selling_price * $product->quantity_on_hand);
+        $inventoryExpectedProfit = $inventoryRetailValue - $inventoryCostValue;
+        $needsRestock = $inventoryProducts->filter(fn ($product) => $product->isLowStock() || $product->isOutOfStock())
+            ->sortBy('quantity_on_hand')->values();
+        $belowCostProducts = $inventoryProducts->filter(fn ($product) => $product->selling_price < $product->cost_price)->values();
+        $belowCostProductCount = $belowCostProducts->count();
+        $expiringSoonProducts = $inventoryProducts->filter(fn ($product) => $product->quantity_on_hand > 0 && $product->isExpiringSoon(30))->sortBy('expiration_date')->values();
+
+        $movementQuery = DB::table('inventory_movements')->whereBetween('occurred_at', [$start, $end]);
+        $unitsReceived = (int) (clone $movementQuery)->where('type', 'receipt')->sum('quantity_delta');
+        $unitsSold = (int) abs((clone $movementQuery)->where('type', 'sale')->sum('quantity_delta'));
+        $stockAdjustments = (int) (clone $movementQuery)->where('type', 'adjustment')->sum('quantity_delta');
+
+        $soldQuantities = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereBetween('sales.created_at', [$start, $end])
+            ->select('sale_items.product_id', DB::raw('SUM(sale_items.quantity) as qty'))
+            ->groupBy('sale_items.product_id')
+            ->pluck('qty', 'product_id');
+        $movementProducts = $inventoryProducts->filter(fn ($product) => $product->quantity_on_hand > 0)->map(function ($product) use ($soldQuantities) {
+            $product->period_qty_sold = (int) ($soldQuantities[$product->id] ?? 0);
+            return $product;
+        });
+        $fastMovingProducts = $movementProducts->filter(fn ($product) => $product->period_qty_sold > 0)->sortByDesc('period_qty_sold')->take(5)->values();
+        $slowMovingProducts = $movementProducts->sortBy('period_qty_sold')->take(5)->values();
+        $categoryStockProducts = $inventoryProducts->filter(fn ($product) => !$product->isLowStock() && !$product->isOutOfStock());
+        $inventoryByCategory = $categoryStockProducts->groupBy('category')->map(fn ($products, $category) => [
+            'category' => $category ?: 'Uncategorized',
+            'products' => $products->count(),
+            'units' => (int) $products->sum('quantity_on_hand'),
+            'cost_value' => (float) $products->sum(fn ($product) => $product->cost_price * $product->quantity_on_hand),
+        ])->sortBy('category')->values();
 
         // --- Chart data: revenue trend across the period ---
         [$chartLabels, $chartValues] = $period === 'year'
@@ -68,8 +127,14 @@ class ReportController extends Controller
         return view('reports.index', compact(
             'period', 'offset', 'label', 'start', 'end',
             'totalRevenue', 'totalTransactions', 'totalItems', 'avgSale',
+            'costOfGoodsSold', 'grossProfit', 'estimatedCostLineCount',
             'revenueChangePct', 'paymentBreakdown', 'topProducts',
-            'chartLabels', 'chartValues'
+            'chartLabels', 'chartValues', 'salesByCategory',
+            'inventoryProducts', 'inventoryProductCount', 'inventoryUnits',
+            'inventoryCostValue', 'inventoryRetailValue', 'inventoryExpectedProfit',
+            'belowCostProductCount', 'belowCostProducts', 'needsRestock', 'expiringSoonProducts',
+            'inventoryByCategory', 'unitsReceived', 'unitsSold', 'stockAdjustments',
+            'fastMovingProducts', 'slowMovingProducts'
         ));
     }
 

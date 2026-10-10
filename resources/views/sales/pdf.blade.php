@@ -3,35 +3,20 @@
 <head>
 <meta charset="utf-8">
 <style>
-    body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
-    h1 { font-size: 18px; margin: 0 0 2px 0; }
-    .subtitle { color: #666; font-size: 10px; margin-bottom: 12px; }
-    .meta { margin-bottom: 16px; font-size: 10px; color: #444; line-height: 1.6; }
-    .sale-header {
-        background: #EAF6FC;
-        padding: 6px 8px;
-        font-size: 10.5px;
-        font-weight: bold;
-        margin-top: 14px;
-    }
-    table.items { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    table.items th, table.items td {
-        border: 1px solid #ccc;
-        padding: 4px 6px;
-        font-size: 10px;
-        text-align: left;
-    }
-    table.items th { background: #f5f5f5; }
-    .text-right { text-align: right; }
-    .sale-total td { font-weight: bold; background: #fafafa; }
-    .grand-total {
-        margin-top: 24px;
-        font-size: 13px;
-        font-weight: bold;
-        text-align: right;
-        border-top: 2px solid #333;
-        padding-top: 10px;
-    }
+    @page { margin: 28px 24px; }
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 9px; color: #33475B; }
+    h1 { font-size: 17px; margin: 0 0 2px; }
+    .subtitle { color: #83A0B4; font-size: 9px; margin-bottom: 10px; }
+    .meta { margin-bottom: 10px; font-size: 9px; color: #33475B; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border: 1px solid #DFF0F8; padding: 4px 3px; vertical-align: middle; }
+    th { background: #6EC1E4; color: #fff; font-size: 8px; text-align: center; }
+    tbody tr:nth-child(even) { background: #EAF6FC; }
+    td { font-size: 8px; }
+    .number { text-align: right; white-space: nowrap; }
+    .center { text-align: center; }
+    .summary-row td { background: #CDEBF7; color: #33475B; font-weight: bold; }
+    .empty { text-align: center; padding: 12px; }
 </style>
 </head>
 <body>
@@ -43,51 +28,52 @@
         @if($filters['date_from'] || $filters['date_to'])
             Period: {{ $filters['date_from'] ?? 'Start' }} to {{ $filters['date_to'] ?? 'Present' }}<br>
         @endif
-        @if($filters['receipt'])
-            Receipt filter: {{ $filters['receipt'] }}<br>
-        @endif
-        Total Transactions: {{ $sales->count() }}
+        @if($filters['receipt']) Receipt filter: {{ $filters['receipt'] }}<br> @endif
+        Transactions: {{ $sales->count() }} &nbsp; | &nbsp; Items sold: {{ $totalItemsSold }} &nbsp; | &nbsp; Sales total: P {{ number_format($grandTotal, 2) }}
     </div>
 
-    @forelse($sales as $sale)
-        <div class="sale-header">
-            Receipt #: {{ $sale->sale_number }} &nbsp;|&nbsp;
-            Date/Time: {{ $sale->created_at->format('M d, Y h:i A') }} &nbsp;|&nbsp;
-            Cashier: {{ $sale->cashier_name }} &nbsp;|&nbsp;
-            Payment: {{ $sale->payment_method === 'gcash' ? 'GCash' : 'Cash' }}
-        </div>
-        <table class="items">
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Qty</th>
-                    <th class="text-right">Unit Price</th>
-                    <th class="text-right">Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%">RECEIPT #</th>
+                <th style="width: 13%">DATE</th>
+                <th style="width: 23%">ITEM NAME</th>
+                <th style="width: 8%">QTY</th>
+                <th style="width: 13%">UNIT PRICE</th>
+                <th style="width: 13%">AMOUNT</th>
+                <th style="width: 10%">PAYMENT</th>
+                <th style="width: 10%">CASHIER</th>
+            </tr>
+        </thead>
+        <tbody>
+            @php $itemCount = 0; @endphp
+            @forelse($sales as $sale)
                 @foreach($sale->items as $item)
+                    @php $itemCount += (int) $item->quantity; @endphp
                     <tr>
-                        <td>{{ $item->product->name ?? '(deleted product)' }}</td>
-                        <td>{{ $item->quantity }}</td>
-                        <td class="text-right">P {{ number_format($item->unit_price, 2) }}</td>
-                        <td class="text-right">P {{ number_format($item->subtotal, 2) }}</td>
+                        <td>{{ $sale->sale_number }}</td>
+                        <td>{{ $sale->created_at->format('M d, Y h:i A') }}</td>
+                        <td>{{ $item->product->displayName() ?? '(deleted product)' }}</td>
+                        <td class="center">{{ $item->quantity }}</td>
+                        <td class="number">P {{ number_format($item->unit_price, 2) }}</td>
+                        <td class="number">P {{ number_format($item->subtotal, 2) }}</td>
+                        <td class="center">{{ $sale->payment_method === 'gcash' ? 'GCash' : 'Cash' }}</td>
+                        <td>{{ $sale->cashier_name }}</td>
                     </tr>
                 @endforeach
-                <tr class="sale-total">
-                    <td colspan="3" class="text-right">Total Amount:</td>
-                    <td class="text-right">P {{ number_format($sale->total_amount, 2) }}</td>
+            @empty
+                <tr><td colspan="8" class="empty">No sales match the selected filters.</td></tr>
+            @endforelse
+            @if($sales->isNotEmpty())
+                <tr class="summary-row">
+                    <td colspan="3">REPORT TOTAL ({{ $sales->count() }} transaction{{ $sales->count() === 1 ? '' : 's' }})</td>
+                    <td class="center">{{ $itemCount }}</td>
+                    <td></td>
+                    <td class="number">P {{ number_format($grandTotal, 2) }}</td>
+                    <td colspan="2"></td>
                 </tr>
-            </tbody>
-        </table>
-    @empty
-        <p>No sales match the selected filters.</p>
-    @endforelse
-
-    @if($sales->isNotEmpty())
-        <div class="grand-total">
-            Grand Total ({{ $sales->count() }} transaction{{ $sales->count() === 1 ? '' : 's' }}): P {{ number_format($grandTotal, 2) }}
-        </div>
-    @endif
+            @endif
+        </tbody>
+    </table>
 </body>
 </html>

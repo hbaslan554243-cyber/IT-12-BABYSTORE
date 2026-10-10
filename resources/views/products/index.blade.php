@@ -1,9 +1,9 @@
 @extends('layouts.app')
-@section('title', 'Inventory')
+@section('title', '')
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Inventory <small class="text-muted fs-6">(Problem 1 module)</small></h2>
+        <h2>Inventory <small class="text-muted fs-6"></small></h2>
         @if(auth()->user()->isOwner())
             <a href="{{ route('products.create') }}" class="btn btn-danger">+ Add Product</a>
         @endif

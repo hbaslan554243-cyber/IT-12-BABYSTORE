@@ -129,7 +129,20 @@ class SaleController extends Controller
                     'product_id' => $line['product']->id,
                     'quantity' => $line['quantity'],
                     'unit_price' => $line['unit_price'],
+                    'unit_cost_at_sale' => $line['product']->cost_price,
                     'subtotal' => $line['subtotal'],
+                ]);
+
+                DB::table('inventory_movements')->insert([
+                    'product_id' => $line['product']->id,
+                    'type' => 'sale',
+                    'quantity_delta' => -$line['quantity'],
+                    'reference_type' => 'sale',
+                    'reference_id' => $sale->id,
+                    'occurred_at' => now(),
+                    'note' => 'Stock sold',
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
 
                 // This single line is the direct fix for the paper's finding
@@ -156,4 +169,3 @@ class SaleController extends Controller
         return view('sales.show', compact('sale'));
     }
 }
-    
