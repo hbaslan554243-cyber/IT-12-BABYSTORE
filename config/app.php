@@ -97,7 +97,21 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
-    'key' => env('APP_KEY'),
+    'key' => (static function () {
+        $key = env('APP_KEY');
+
+        // Render generates a base64-encoded 256-bit secret without Laravel's
+        // "base64:" marker. Add the marker so Laravel decodes it to 32 bytes.
+        if (is_string($key) && !str_starts_with($key, 'base64:')) {
+            $decoded = base64_decode($key, true);
+
+            if ($decoded !== false && strlen($decoded) === 32) {
+                return 'base64:'.$key;
+            }
+        }
+
+        return $key;
+    })(),
 
     'previous_keys' => [
         ...array_filter(
