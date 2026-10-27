@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Render terminates TLS at its HTTPS edge, so force absolute asset and
         // pagination URLs to HTTPS there without trusting forwarded headers.
-        if (env('RENDER') === 'true') {
+        if (env('RENDER')) {
             URL::forceScheme('https');
         }
     }
