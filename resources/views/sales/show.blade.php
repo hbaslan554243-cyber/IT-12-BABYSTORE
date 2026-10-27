@@ -16,7 +16,7 @@
             <tbody>
             @foreach($sale->items as $item)
                 <tr>
-                    <td>{{ $item->product->name ?? '(deleted product)' }}</td>
+                    <td>{{ $item->product ? $item->product->productLabel() : '(deleted product)' }}</td>
                     <td>{{ $item->quantity }}</td>
                     <td>₱{{ number_format($item->unit_price, 2) }}</td>
                     <td>₱{{ number_format($item->subtotal, 2) }}</td>
@@ -32,9 +32,9 @@
             <span>Payment Method</span>
             <span>
                 @if($sale->payment_method === 'gcash')
-                    📱 GCash @if($sale->gcash_reference)(Ref: {{ $sale->gcash_reference }})@endif
+                    GCash @if($sale->gcash_reference)(Ref: {{ $sale->gcash_reference }})@endif
                 @else
-                    💵 Cash
+                    Cash
                 @endif
             </span>
         </div>

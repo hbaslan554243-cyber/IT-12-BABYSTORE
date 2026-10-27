@@ -23,7 +23,7 @@ class SaleController extends Controller
         // accidentally sell something that isn't there. With large
         // catalogs, the view lets staff search by name/SKU and narrow by
         // category instead of scrolling a long list.
-        $products = Product::where('quantity_on_hand', '>', 0)->orderBy('name')->get();
+        $products = Product::active()->where('quantity_on_hand', '>', 0)->orderBy('name')->get();
         $categories = Product::CATEGORIES;
 
         // Built here (not inline in the Blade view) because Blade's @json
@@ -34,6 +34,7 @@ class SaleController extends Controller
             'id' => $p->id,
             'label' => $p->name . ' — ' . $p->sku,
             'name' => $p->name,
+            'details' => $p->productLabel(false, true),
             'sku' => $p->sku,
             'category' => $p->category,
             'price' => (float) $p->selling_price,
@@ -51,7 +52,7 @@ class SaleController extends Controller
             'cash_received' => 'nullable|numeric|min:0',
             'gcash_reference' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => 'required|integer|min:1',
         ], [
             'items.required' => 'Add at least one item before completing the sale.',
@@ -72,7 +73,7 @@ class SaleController extends Controller
             // Lock each product row while we read/deduct stock, so two
             // simultaneous sales at the counter can never oversell an item.
             foreach ($validated['items'] as $item) {
-                $product = Product::where('id', $item['product_id'])->lockForUpdate()->first();
+                $product = Product::active()->where('id', $item['product_id'])->lockForUpdate()->first();
 
                 if (!$product) {
                     throw ValidationException::withMessages(['items' => 'A selected product no longer exists.']);

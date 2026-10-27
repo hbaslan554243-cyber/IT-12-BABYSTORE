@@ -58,7 +58,8 @@ Route::middleware('auth')->group(function () {
         Route::post('products', [ProductController::class, 'store'])->name('products.store');
         Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
-        Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+        Route::post('products/{product}/archive', [ProductController::class, 'archive'])->name('products.archive');
+        Route::post('products/{product}/restore', [ProductController::class, 'restore'])->name('products.restore');
     });
 
     // Problem 2: Sales / POS (both roles can process sales)
@@ -79,7 +80,8 @@ Route::middleware('auth')->group(function () {
         Route::post('suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
         Route::get('suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
         Route::put('suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
-        Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+        Route::post('suppliers/{supplier}/archive', [SupplierController::class, 'archive'])->name('suppliers.archive');
+        Route::post('suppliers/{supplier}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore');
         Route::get('purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
         Route::post('purchase-orders', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
     });

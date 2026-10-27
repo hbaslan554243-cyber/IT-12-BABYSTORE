@@ -71,18 +71,20 @@ class ReportController extends Controller
             ->orderByDesc('qty')
             ->limit(5)
             ->get();
+        $topProductModels = Product::whereIn('id', $topProducts->pluck('id'))->get()->keyBy('id');
 
+        $reportCategory = "CASE WHEN products.category IN ('Clothing', 'Other', 'Others') THEN 'Uncategorized' ELSE COALESCE(products.category, 'Uncategorized') END";
         $salesByCategory = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->whereBetween('sales.created_at', [$start, $end])
-            ->select(DB::raw("COALESCE(products.category, 'Uncategorized') as category"), DB::raw('SUM(sale_items.subtotal) as revenue'))
-            ->groupBy('products.category')
+            ->select(DB::raw($reportCategory . ' as category'), DB::raw('SUM(sale_items.subtotal) as revenue'))
+            ->groupByRaw($reportCategory)
             ->orderByDesc('revenue')
             ->get();
 
         // --- Current inventory snapshot (independent of the sales period) ---
-        $inventoryProducts = Product::orderBy('name')->get();
+        $inventoryProducts = Product::active()->orderBy('name')->get();
         $inventoryProductCount = $inventoryProducts->count();
         $inventoryUnits = (int) $inventoryProducts->sum('quantity_on_hand');
         $inventoryCostValue = (float) $inventoryProducts->sum(fn ($product) => $product->cost_price * $product->quantity_on_hand);
@@ -97,8 +99,6 @@ class ReportController extends Controller
         $movementQuery = DB::table('inventory_movements')->whereBetween('occurred_at', [$start, $end]);
         $unitsReceived = (int) (clone $movementQuery)->where('type', 'receipt')->sum('quantity_delta');
         $unitsSold = (int) abs((clone $movementQuery)->where('type', 'sale')->sum('quantity_delta'));
-        $stockAdjustments = (int) (clone $movementQuery)->where('type', 'adjustment')->sum('quantity_delta');
-
         $soldQuantities = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->whereBetween('sales.created_at', [$start, $end])
@@ -109,10 +109,9 @@ class ReportController extends Controller
             $product->period_qty_sold = (int) ($soldQuantities[$product->id] ?? 0);
             return $product;
         });
-        $fastMovingProducts = $movementProducts->filter(fn ($product) => $product->period_qty_sold > 0)->sortByDesc('period_qty_sold')->take(5)->values();
         $slowMovingProducts = $movementProducts->sortBy('period_qty_sold')->take(5)->values();
         $categoryStockProducts = $inventoryProducts->filter(fn ($product) => !$product->isLowStock() && !$product->isOutOfStock());
-        $inventoryByCategory = $categoryStockProducts->groupBy('category')->map(fn ($products, $category) => [
+        $inventoryByCategory = $categoryStockProducts->groupBy(fn ($product) => in_array($product->category, Product::REMOVED_CATEGORIES, true) ? null : $product->category)->map(fn ($products, $category) => [
             'category' => $category ?: 'Uncategorized',
             'products' => $products->count(),
             'units' => (int) $products->sum('quantity_on_hand'),
@@ -129,12 +128,12 @@ class ReportController extends Controller
             'totalRevenue', 'totalTransactions', 'totalItems', 'avgSale',
             'costOfGoodsSold', 'grossProfit', 'estimatedCostLineCount',
             'revenueChangePct', 'paymentBreakdown', 'topProducts',
+            'topProductModels',
             'chartLabels', 'chartValues', 'salesByCategory',
             'inventoryProducts', 'inventoryProductCount', 'inventoryUnits',
             'inventoryCostValue', 'inventoryRetailValue', 'inventoryExpectedProfit',
             'belowCostProductCount', 'belowCostProducts', 'needsRestock', 'expiringSoonProducts',
-            'inventoryByCategory', 'unitsReceived', 'unitsSold', 'stockAdjustments',
-            'fastMovingProducts', 'slowMovingProducts'
+            'inventoryByCategory', 'unitsReceived', 'unitsSold', 'slowMovingProducts'
         ));
     }
 

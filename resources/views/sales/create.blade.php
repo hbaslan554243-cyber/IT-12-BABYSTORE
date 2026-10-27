@@ -38,8 +38,8 @@
 
                     <label class="form-label">Payment Method</label>
                     <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-outline-primary flex-fill pay-method-btn active" data-method="cash">💵 Cash</button>
-                        <button type="button" class="btn btn-outline-primary flex-fill pay-method-btn" data-method="gcash">📱 GCash</button>
+                        <button type="button" class="btn btn-outline-primary flex-fill pay-method-btn active" data-method="cash"> Cash</button>
+                        <button type="button" class="btn btn-outline-primary flex-fill pay-method-btn" data-method="gcash"> GCash</button>
                     </div>
 
                     <div id="cash-fields">
@@ -93,6 +93,7 @@
     .product-card.disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
     .product-card .p-icon { font-size: 32px; margin-bottom: 6px; }
     .product-card .p-name { font-weight: 700; font-size: 12.5px; color: var(--clr-text); min-height: 32px; line-height: 1.25; }
+    .product-card .p-details, .cart-line .cart-details { color: var(--clr-text-muted); font-size: 10.5px; line-height: 1.25; margin-top: 2px; }
     .product-card .p-price { color: var(--clr-primary-darker); font-weight: 800; font-size: 13.5px; margin-top: 2px; }
     .product-card .p-stock { font-size: 10.5px; color: var(--clr-text-muted); }
     .product-card .p-stock.low { color: #B48A3E; }
@@ -126,7 +127,8 @@
 
     const CATEGORY_ICONS = {
         'Diapers': '👶', 'Milk': '🍼', 'Lotion': '🧴', 'Wipes': '🧻',
-        'Feeding': '🥄', 'Clothing': '👕', 'Toys': '🧸', 'Accessories': '🎀', 'Other': '📦',
+        'Baby Care': '🧸', 'Bath/Hygiene': '🛁',
+        'Feeding': '🥄', 'Toys': '🧸', 'Accessories': '🎀',
     };
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -147,6 +149,12 @@
         let activeCategory = '';
         let cart = {}; // product_id -> { product, qty }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+            }[char]));
+        }
+
         function renderGrid() {
             const term = searchInput.value.trim().toLowerCase();
             grid.innerHTML = '';
@@ -158,7 +166,8 @@
                     card.className = 'product-card' + (p.stock <= 0 ? ' disabled' : '');
                     card.innerHTML = `
                         <div class="p-icon">${CATEGORY_ICONS[p.category] || '📦'}</div>
-                        <div class="p-name">${p.name}</div>
+                        <div class="p-name">${escapeHtml(p.name)}</div>
+                        ${p.details ? `<div class="p-details">${escapeHtml(p.details)}</div>` : ''}
                         <div class="p-price">₱${p.price.toFixed(2)}</div>
                         <div class="p-stock ${p.stock <= 5 ? 'low' : ''}">Stock: ${p.stock}</div>
                     `;
@@ -212,7 +221,8 @@
                     row.className = 'cart-line';
                     row.innerHTML = `
                         <div>
-                            <div class="cart-name">${line.product.name}</div>
+                            <div class="cart-name">${escapeHtml(line.product.name)}</div>
+                            ${line.product.details ? `<div class="cart-details">${escapeHtml(line.product.details)}</div>` : ''}
                             <div class="cart-sub">₱${line.product.price.toFixed(2)} each · ₱${subtotal.toFixed(2)}</div>
                         </div>
                         <div class="cart-qty-btn" data-action="dec">−</div>

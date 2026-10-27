@@ -206,10 +206,6 @@
         <h1>Sign In</h1>
         <div class="sub">Enter your credentials to access your dashboard.</div>
 
-        @if(session('status'))
-            <div class="alert-status">{{ session('status') }}</div>
-        @endif
-
         @if($errors->any())
             <div class="alert-error">
                 @foreach($errors->all() as $error)
@@ -221,13 +217,13 @@
         <form method="POST" action="{{ route('login.attempt') }}" id="login-form">
             @csrf
             <div class="mb-3">
-                <label class="form-label">Username or Email</label>
-                <input type="text" name="login" value="{{ old('login') }}" class="form-control" placeholder="owner or owner@aizenbabystore.test" required autofocus>
+                <label class="form-label visually-hidden">Username or Email</label>
+                <input type="text" name="login" value="{{ old('login') }}" class="form-control" placeholder="Username or Email" aria-label="Username or Email" required autofocus>
             </div>
             <div class="mb-2">
-                <label class="form-label">Password</label>
+                <label class="form-label visually-hidden">Password</label>
                 <div class="password-wrap">
-                    <input type="password" name="password" id="password" class="form-control" placeholder="••••••••" required>
+                    <input type="password" name="password" id="password" class="form-control" placeholder="Password" aria-label="Password" required>
                     <button type="button" class="toggle-eye" onclick="togglePassword()" aria-label="Show or hide password">
                         <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>

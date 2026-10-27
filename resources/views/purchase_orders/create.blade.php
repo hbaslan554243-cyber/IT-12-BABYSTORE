@@ -1,9 +1,9 @@
 @extends('layouts.app')
-@section('title', 'New Purchase Order')
+@section('title', '')
 
 @section('content')
-    <h2>New Purchase Order <small class="text-muted fs-6">(supporting restocking module)</small></h2>
-    <p class="text-muted">Formally records what was ordered from the supplier — replacing verbal or Messenger-only arrangements.</p>
+    <h2>New Purchase Order <small class="text-muted fs-6"></small></h2>
+    <p class="text-muted"></p>
 
     <form method="POST" action="{{ route('purchase-orders.store') }}" id="po-form">
         @csrf
@@ -29,7 +29,8 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Expected Delivery</label>
-                            <input type="date" name="expected_delivery_date" class="form-control">
+                            <input type="text" id="expected-delivery-date" class="form-control" value="{{ date('M d, Y', strtotime(old('order_date', date('Y-m-d')) . ' +7 days')) }}" readonly>
+                            <div class="form-text">Automatically set to 7 days after the order date.</div>
                         </div>
                     </div>
                 </div>
@@ -61,17 +62,17 @@
         </div>
     </form>
 
+    <datalist id="product-options">
+        @foreach($products as $product)
+            <option value="{{ $product->productLabel() }} — {{ $product->sku }}" data-product-id="{{ $product->id }}" data-cost="{{ $product->cost_price }}"></option>
+        @endforeach
+    </datalist>
+
     <template id="row-template">
         <tr>
             <td>
-                <select class="form-select product-select">
-                    <option value="">-- Select product --</option>
-                    @foreach($products as $product)
-                        <option value="{{ $product->id }}" data-cost="{{ $product->cost_price }}">
-                            {{ $product->name }} (On hand: {{ $product->quantity_on_hand }})
-                        </option>
-                    @endforeach
-                </select>
+                <input type="search" class="form-control product-search" list="product-options" placeholder="Search product name or SKU" autocomplete="off">
+                <input type="hidden" class="product-id">
             </td>
             <td><input type="number" min="1" value="1" class="form-control qty-input"></td>
             <td><input type="number" min="0" step="0.01" value="0" class="form-control cost-input"></td>
@@ -88,6 +89,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const template = document.getElementById('row-template');
     const totalDisplay = document.getElementById('total-display');
     const form = document.getElementById('po-form');
+    const productOptions = Array.from(document.querySelectorAll('#product-options option'));
+    const orderDateInput = form.querySelector('[name="order_date"]');
+    const expectedDeliveryDate = document.getElementById('expected-delivery-date');
+
+    function updateExpectedDeliveryDate() {
+        if (!orderDateInput.value) {
+            expectedDeliveryDate.value = '';
+            return;
+        }
+        const [year, month, day] = orderDateInput.value.split('-').map(Number);
+        const deliveryDate = new Date(Date.UTC(year, month - 1, day + 7));
+        expectedDeliveryDate.value = deliveryDate.toLocaleDateString(undefined, {
+            year: 'numeric', month: 'short', day: '2-digit', timeZone: 'UTC'
+        });
+    }
+
+    orderDateInput.addEventListener('change', updateExpectedDeliveryDate);
 
     function addRow() {
         const clone = template.content.cloneNode(true);
@@ -97,13 +115,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function bindRow(row) {
-        row.querySelector('.product-select').addEventListener('change', () => {
-            const select = row.querySelector('.product-select');
-            const opt = select.options[select.selectedIndex];
-            const cost = opt && opt.dataset.cost ? parseFloat(opt.dataset.cost) : 0;
-            row.querySelector('.cost-input').value = cost.toFixed(2);
+        const search = row.querySelector('.product-search');
+        const productId = row.querySelector('.product-id');
+        const matchProduct = () => {
+            const match = productOptions.find(option => option.value.toLocaleLowerCase() === search.value.trim().toLocaleLowerCase());
+            productId.value = match ? match.dataset.productId : '';
+            if (match) {
+                row.querySelector('.cost-input').value = (parseFloat(match.dataset.cost) || 0).toFixed(2);
+            } else {
+                row.querySelector('.cost-input').value = '0';
+            }
             updateRow(row);
-        });
+        };
+        search.addEventListener('input', matchProduct);
+        search.addEventListener('change', matchProduct);
         row.querySelector('.qty-input').addEventListener('input', () => updateRow(row));
         row.querySelector('.cost-input').addEventListener('input', () => updateRow(row));
         row.querySelector('.remove-row').addEventListener('click', () => { row.remove(); recalc(); });
@@ -130,16 +155,16 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('input[name^="items"]').forEach(el => el.remove());
         let index = 0, valid = false;
         tbody.querySelectorAll('tr').forEach(row => {
-            const select = row.querySelector('.product-select');
+            const productId = row.querySelector('.product-id');
             const qty = row.querySelector('.qty-input').value;
             const cost = row.querySelector('.cost-input').value;
-            if (select.value && qty > 0) {
+            if (productId.value && qty > 0) {
                 valid = true;
                 ['product_id', 'quantity_ordered', 'unit_cost'].forEach((field, i) => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
                     input.name = `items[${index}][${field}]`;
-                    input.value = [select.value, qty, cost][i];
+                    input.value = [productId.value, qty, cost][i];
                     form.appendChild(input);
                 });
                 index++;
@@ -152,6 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     addRow();
+    updateExpectedDeliveryDate();
 });
 </script>
 @endsection

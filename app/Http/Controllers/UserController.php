@@ -8,12 +8,7 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    /**
-     * Manage Users/Accounts — Owner-only module.
-     * Lets the owner create staff accounts, toggle account status
-     * (active/inactive), and reset a staff member's password, without
-     * ever needing direct database access.
-     */
+
     public function index()
     {
         $users = User::orderBy('role')->orderBy('name')->get();

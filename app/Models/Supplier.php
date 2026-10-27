@@ -16,10 +16,25 @@ class Supplier extends Model
         'phone',
         'facebook_handle',
         'address',
+        'archived_at',
+    ];
+
+    protected $casts = [
+        'archived_at' => 'datetime',
     ];
 
     public function purchaseOrders(): HasMany
     {
         return $this->hasMany(PurchaseOrder::class);
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
     }
 }

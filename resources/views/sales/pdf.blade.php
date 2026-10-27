@@ -53,7 +53,7 @@
                     <tr>
                         <td>{{ $sale->sale_number }}</td>
                         <td>{{ $sale->created_at->format('M d, Y h:i A') }}</td>
-                        <td>{{ $item->product->displayName() ?? '(deleted product)' }}</td>
+                        <td>{{ $item->product?->productLabel() ?? '(deleted product)' }}</td>
                         <td class="center">{{ $item->quantity }}</td>
                         <td class="number">P {{ number_format($item->unit_price, 2) }}</td>
                         <td class="number">P {{ number_format($item->subtotal, 2) }}</td>

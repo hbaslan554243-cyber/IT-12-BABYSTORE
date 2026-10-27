@@ -3,16 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
     public function index()
     {
-        $suppliers = Supplier::orderBy('name')->paginate(15);
+        $suppliers = Supplier::active()->orderBy('name')->paginate(15);
+        $archivedSuppliers = Supplier::whereNotNull('archived_at')->orderByDesc('archived_at')->get();
 
-        return view('suppliers.index', compact('suppliers'));
+        return view('suppliers.index', compact('suppliers', 'archivedSuppliers'));
     }
 
     public function create()
@@ -43,20 +43,20 @@ class SupplierController extends Controller
         return redirect()->route('suppliers.index')->with('status', 'Supplier updated successfully.');
     }
 
-    public function destroy(Supplier $supplier)
+    public function archive(Supplier $supplier)
     {
-        try {
-            $supplier->delete();
-        } catch (QueryException $e) {
-            // Supplier is referenced by existing purchase orders (FK
-            // restrict) — keep the historical record intact rather than
-            // allowing an orphaned reference.
-            return back()->withErrors([
-                'supplier' => "Cannot delete \"{$supplier->name}\" — it has existing purchase orders on record. Historical records must be preserved.",
-            ]);
+        if (!$supplier->isArchived()) {
+            $supplier->update(['archived_at' => now()]);
         }
 
-        return redirect()->route('suppliers.index')->with('status', 'Supplier removed.');
+        return redirect()->route('suppliers.index')->with('status', 'Supplier archived. You can find it in Archived suppliers.');
+    }
+
+    public function restore(Supplier $supplier)
+    {
+        $supplier->update(['archived_at' => null]);
+
+        return redirect()->route('suppliers.index')->with('status', 'Supplier restored.');
     }
 
     private function validated(Request $request): array

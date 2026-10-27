@@ -28,10 +28,10 @@ class PurchaseOrderController extends Controller
 
     public function create()
     {
-        $suppliers = Supplier::orderBy('name')->get();
+        $suppliers = Supplier::active()->orderBy('name')->get();
         // Pre-select low-stock products to make reordering faster, tying
         // this module directly to the inventory alert from Problem 1.
-        $products = Product::orderBy('name')->get();
+        $products = Product::active()->orderBy('name')->get();
 
         return view('purchase_orders.create', compact('suppliers', 'products'));
     }
@@ -39,12 +39,11 @@ class PurchaseOrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
+            'supplier_id' => ['required', \Illuminate\Validation\Rule::exists('suppliers', 'id')->where(fn ($query) => $query->whereNull('archived_at'))],
             'order_date' => 'required|date',
-            'expected_delivery_date' => 'nullable|date|after_or_equal:order_date',
             'notes' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where(fn ($query) => $query->whereNull('archived_at'))],
             'items.*.quantity_ordered' => 'required|integer|min:1',
             'items.*.unit_cost' => 'required|numeric|min:0',
         ]);
@@ -61,7 +60,7 @@ class PurchaseOrderController extends Controller
                 'user_id' => auth()->id(),
                 'status' => 'pending',
                 'order_date' => $validated['order_date'],
-                'expected_delivery_date' => $validated['expected_delivery_date'] ?? null,
+                'expected_delivery_date' => \Illuminate\Support\Carbon::parse($validated['order_date'])->addDays(7)->toDateString(),
                 'total_amount' => $total,
                 'notes' => $validated['notes'] ?? null,
             ]);

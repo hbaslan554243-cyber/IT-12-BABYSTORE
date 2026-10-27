@@ -4,37 +4,43 @@
 @section('content')
     <h2 class="mb-4">Dashboard</h2>
 
-    {{-- All-time revenue summary --}}
+    {{-- Revenue summary; optional dates filter revenue, transactions and top products. --}}
     <div class="card p-3 mb-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-            <h5 class="mb-0">💰 Revenue</h5>
+            <h5 class="mb-0">Revenue</h5>
+            @if(auth()->user()->isOwner())
+                <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-primary">Full Report →</a>
+            @endif
         </div>
 
-        @if(auth()->user()->isOwner())
-            <a href="{{ route('reports.index') }}" class="text-decoration-none">
-        @endif
-            <div class="row g-3 align-items-center">
-                <div class="col-md-5">
-                    <div class="text-muted small">Total Revenue</div>
-                    <div class="fs-2 fw-bold" style="color: var(--clr-text);">₱{{ number_format($totalRevenue, 2) }}</div>
-                </div>
-                <div class="col-md-4">
-                    <div class="text-muted small">Total Transactions</div>
-                    <div class="fs-4 fw-bold">{{ $totalTransactions }}</div>
-                </div>
-                <div class="col-md-3 text-md-end">
-                    @if(auth()->user()->isOwner())
-                        <span class="btn btn-sm btn-outline-primary">View Full Report →</span>
-                    @endif
-                </div>
+        <div class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <div class="text-muted small">Total Revenue</div>
+                <div class="fs-2 fw-bold" style="color: var(--clr-text);">₱{{ number_format($totalRevenue, 2) }}</div>
+                    <form method="GET" action="{{ route('dashboard') }}" class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                        <div class="input-group input-group-sm" style="max-width: 210px;">
+                            <span class="input-group-text">From</span>
+                            <input type="date" name="date_from" value="{{ $dateFrom }}" class="form-control" aria-label="Start date">
+                        </div>
+                        <div class="input-group input-group-sm" style="max-width: 210px;">
+                            <span class="input-group-text">To</span>
+                            <input type="date" name="date_to" value="{{ $dateTo }}" class="form-control" aria-label="End date">
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary">Apply</button>
+                        @if($dateFrom || $dateTo)
+                            <a href="{{ route('dashboard') }}" class="small text-muted">Clear</a>
+                        @endif
+                    </form>
             </div>
-        @if(auth()->user()->isOwner())
-            </a>
-        @endif
+            <div class="col-md-6">
+                <div class="text-muted small">Total Transactions</div>
+                <div class="fs-4 fw-bold">{{ $totalTransactions }}</div>
+            </div>
+        </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-5 g-3 mb-4">
+        <div class="col">
             <a href="{{ route('sales.log') }}" class="text-decoration-none">
                 <div class="card stat-card p-3 h-100">
                     <div class="text-muted small">Today's Sales</div>
@@ -43,7 +49,23 @@
                 </div>
             </a>
         </div>
-        <div class="col-md-4">
+        <div class="col">
+            <a href="{{ route('products.index') }}" class="text-decoration-none">
+                <div class="card stat-card p-3 h-100" style="border-left-color:#8FE0B4">
+                    <div class="text-muted small">Total Products</div>
+                    <div class="fs-3 fw-bold">{{ $totalProducts }}</div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('purchase-orders.index') }}" class="text-decoration-none">
+                <div class="card stat-card p-3 h-100" style="border-left-color:#8FD3F4">
+                    <div class="text-muted small">Pending Products</div>
+                    <div class="fs-3 fw-bold">{{ $pendingPurchaseOrders->count() }}</div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
             <a href="{{ route('products.index', ['stock_filter' => 'low']) }}" class="text-decoration-none">
                 <div class="card stat-card p-3 h-100" style="border-left-color:#F4C79A">
                     <div class="text-muted small">Low Stock Items</div>
@@ -52,7 +74,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-md-4">
+        <div class="col">
             <a href="{{ route('products.index', ['stock_filter' => 'out']) }}" class="text-decoration-none">
                 <div class="card stat-card p-3 h-100" style="border-left-color:#E88989">
                     <div class="text-muted small">Out of Stock</div>
@@ -63,37 +85,10 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-3">
-        <div class="col-md-4">
-            <a href="{{ route('products.index') }}" class="text-decoration-none">
-                <div class="card p-3 h-100 stat-card" style="border-left-color:#8FE0B4">
-                    <div class="text-muted small">Total Products</div>
-                    <div class="fs-4 fw-bold">{{ $totalProducts }}</div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{{ route('purchase-orders.index') }}" class="text-decoration-none">
-                <div class="card p-3 h-100 stat-card" style="border-left-color:#8FD3F4">
-                    <div class="text-muted small">Pending Purchase Orders</div>
-                    <div class="fs-4 fw-bold">{{ $pendingPurchaseOrders->count() }}</div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{{ route('sales.create') }}" class="text-decoration-none">
-                <div class="card p-3 h-100 stat-card" style="border-left-color:#6EC1E4">
-                    <div class="text-muted small">Quick Action</div>
-                    <div class="fs-5 fw-bold">+ Start New Sale</div>
-                </div>
-            </a>
-        </div>
-    </div>
-
     <div class="row g-3">
         <div class="col-md-6">
             <div class="card p-3 h-100">
-                <h5>⚠️ Low Stock <small class="text-muted"></small></h5>
+                <h5>Low Stock <small class="text-muted"></small></h5>
                 @if($lowStockProducts->isEmpty())
                     <p class="text-muted mb-0">No products are currently low on stock.</p>
                 @else
@@ -116,7 +111,7 @@
 
         <div class="col-md-6">
             <div class="card p-3 h-100">
-                <h5>🚫 Out of Stock</h5>
+                <h5>Out of Stock</h5>
                 @if($outOfStockProducts->isEmpty())
                     <p class="text-muted mb-0">Nothing is currently out of stock.</p>
                 @else
@@ -126,7 +121,7 @@
                         @foreach($outOfStockProducts as $p)
                             <tr class="out-of-stock-row">
                                 <td>{{ $p->name }}</td>
-                                <td>{{ $p->category }}</td>
+                                <td>{{ $p->displayCategory() }}</td>
                             </tr>
                         @endforeach
                         </tbody>
@@ -142,7 +137,7 @@
     <div class="row g-3 mt-1">
         <div class="col-md-6">
             <div class="card p-3 h-100">
-                <h5>📦 Pending Supplies <small class="text-muted">(supporting restocking module)</small></h5>
+                <h5>Pending Products <small class="text-muted"></small></h5>
                 @if($pendingPurchaseOrders->isEmpty())
                     <p class="text-muted mb-0">No pending purchase orders.</p>
                 @else

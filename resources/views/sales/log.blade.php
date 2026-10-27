@@ -5,7 +5,7 @@
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
             <h2>Sales Records <small class="text-muted fs-6"></small></h2>
-            <p class="text-muted">Every sale, with its exact items one click away — click any row to expand it, or "View Receipt" for a quick preview.</p>
+            <p class="text-muted"></p>
         </div>
         <a href="{{ route('sales.log.pdf', request()->query()) }}" target="_blank" class="btn btn-outline-secondary">📄 Export PDF</a>
     </div>
@@ -24,7 +24,7 @@
             <select name="product_id" class="form-select">
                 <option value="">All products</option>
                 @foreach($products as $p)
-                    <option value="{{ $p->id }}" {{ request('product_id') == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                    <option value="{{ $p->id }}" {{ request('product_id') == $p->id ? 'selected' : '' }}>{{ $p->productLabel() }}</option>
                 @endforeach
             </select>
         </div>
@@ -73,7 +73,7 @@
                 <td>{{ $sale->sale_number }}</td>
                 <td>{{ $sale->cashier_name }}</td>
                 <td>{{ $sale->items_count }} item(s)</td>
-                <td>{{ $sale->payment_method === 'gcash' ? '📱 GCash' : '💵 Cash' }}</td>
+                <td>{{ $sale->payment_method === 'gcash' ? 'GCash' : 'Cash' }}</td>
                 <td>₱{{ number_format($sale->total_amount, 2) }}</td>
                 <td>
                     <button type="button" class="btn btn-sm btn-outline-primary view-receipt-btn" data-bs-toggle="modal" data-bs-target="#receiptModal-{{ $sale->id }}">View Receipt</button>
@@ -87,7 +87,7 @@
                             <tbody>
                             @foreach($sale->items as $item)
                                 <tr>
-                                    <td>{{ $item->product->name ?? '(deleted product)' }}</td>
+                                    <td>{{ $item->product ? $item->product->productLabel() : '(deleted product)' }}</td>
                                     <td>{{ $item->quantity }}</td>
                                     <td>₱{{ number_format($item->unit_price, 2) }}</td>
                                     <td>₱{{ number_format($item->subtotal, 2) }}</td>
@@ -126,7 +126,7 @@
                             <tbody>
                             @foreach($sale->items as $item)
                                 <tr>
-                                    <td>{{ $item->product->name ?? '(deleted product)' }}</td>
+                                    <td>{{ $item->product ? $item->product->productLabel() : '(deleted product)' }}</td>
                                     <td>{{ $item->quantity }}</td>
                                     <td>₱{{ number_format($item->unit_price, 2) }}</td>
                                     <td>₱{{ number_format($item->subtotal, 2) }}</td>
@@ -142,9 +142,9 @@
                             <span>Payment Method</span>
                             <span>
                                 @if($sale->payment_method === 'gcash')
-                                    📱 GCash @if($sale->gcash_reference)(Ref: {{ $sale->gcash_reference }})@endif
+                                    GCash @if($sale->gcash_reference)(Ref: {{ $sale->gcash_reference }})@endif
                                 @else
-                                    💵 Cash
+                                    Cash
                                 @endif
                             </span>
                         </div>

@@ -36,7 +36,7 @@
                 <tbody>
                 @foreach($purchaseOrder->items as $item)
                     <tr>
-                        <td>{{ $item->product->name }}</td>
+                        <td>{{ $item->product ? $item->product->productLabel() : '(deleted product)' }}</td>
                         <td>{{ $item->quantity_ordered }}</td>
                         <td>₱{{ number_format($item->unit_cost, 2) }}</td>
                         <td>₱{{ number_format($item->subtotal, 2) }}</td>
