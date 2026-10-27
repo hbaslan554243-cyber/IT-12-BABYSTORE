@@ -203,8 +203,14 @@ class ReportController extends Controller
     /** One data point per month — used for the Year view. */
     private function monthlyBuckets(Carbon $start, Carbon $end): array
     {
+        $monthExpression = match (DB::connection()->getDriverName()) {
+            'pgsql' => 'EXTRACT(MONTH FROM created_at)',
+            'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
+            default => 'MONTH(created_at)',
+        };
+
         $raw = Sale::whereBetween('created_at', [$start, $end])
-            ->selectRaw('MONTH(created_at) as bucket, SUM(total_amount) as revenue')
+            ->selectRaw($monthExpression.' as bucket, SUM(total_amount) as revenue')
             ->groupBy('bucket')
             ->pluck('revenue', 'bucket');
 
