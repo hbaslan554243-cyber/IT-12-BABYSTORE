@@ -204,7 +204,7 @@ class ReportController extends Controller
     private function monthlyBuckets(Carbon $start, Carbon $end): array
     {
         $monthExpression = match (DB::connection()->getDriverName()) {
-            'pgsql' => 'EXTRACT(MONTH FROM created_at)',
+            'pgsql' => 'CAST(EXTRACT(MONTH FROM created_at) AS INTEGER)',
             'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
             default => 'MONTH(created_at)',
         };
