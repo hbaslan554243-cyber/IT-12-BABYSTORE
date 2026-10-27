@@ -84,7 +84,7 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DB_URL'),
+            'url' => env('NEON_DATABASE_URL', env('DB_URL')),
             'host' => env('POSTGRESQL_ADDON_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('POSTGRESQL_ADDON_PORT', env('DB_PORT', '5432')),
             'database' => env('POSTGRESQL_ADDON_DB', env('DB_DATABASE', 'laravel')),

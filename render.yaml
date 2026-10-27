@@ -25,6 +25,10 @@ services:
         fromDatabase:
           name: babystore-db
           property: connectionString
+      - key: NEON_DATABASE_URL
+        sync: false
+      - key: MIGRATE_RENDER_TO_NEON
+        sync: false
       - key: SESSION_DRIVER
         value: database
       - key: CACHE_STORE
